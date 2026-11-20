@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cycle Tracker</title>
+<!-- External font request removed so the tracker can run offline. -->
+<style>
+:root{--bg:#fbf4ff;--surface:#fff;--ink:#2a1f45;--mute:#7a6d99;--line:#eadcf7;--period:#e0306e;--period-soft:#ffd3e3;--fert:#12a38a;--fert-soft:#c9f4e8;--accent:#7a3cf0;--on-accent:#fff;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151d;--surface:#1b2030;--ink:#e8ecf5;--mute:#98a2b8;--line:#2c3348;--period:#ee6b92;--period-soft:#4a2434;--fert:#59c4b0;--fert-soft:#1f3a37;--accent:#e8ecf5;--on-accent:#12151d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151d;--surface:#1b2030;--ink:#e8ecf5;--mute:#98a2b8;--line:#2c3348;--period:#ee6b92;--period-soft:#4a2434;--fert:#59c4b0;--fert-soft:#1f3a37;--accent:#e8ecf5;--on-accent:#12151d;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:Fraunces,Georgia,serif;font-weight:500;margin:0}
+h1{font-size:1.5rem}h2{font-size:1.15rem;margin-bottom:10px}
+header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 12px;color:var(--mute);font:inherit;cursor:pointer;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--ink);border-color:var(--period);font-weight:700}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--fert);outline-offset:2px}
+.panel[hidden]{display:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.hero{font-family:Fraunces,Georgia,serif;font-size:2.2rem;line-height:1.15;margin:0 0 4px}
+.mute{color:var(--mute);font-size:.9rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:14px}
+.stat b{display:block;font-size:1.15rem}
+label{display:block;font-size:.9rem;margin:10px 0 4px;color:var(--mute)}
+input,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:130px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{background:var(--accent);color:var(--on-accent);border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:500;cursor:pointer;margin-top:14px}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line);margin-left:6px}
+.msg{margin-top:10px;font-size:.9rem;min-height:1.3em}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cal-head button{background:none;border:1px solid var(--line);border-radius:8px;color:var(--ink);width:36px;height:36px;cursor:pointer;font-size:1rem}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.dow{font-size:.75rem;color:var(--mute);padding:4px 0}
+.day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.9rem;border:1.5px solid transparent;position:relative}
+.day.p{background:var(--period);color:#fff;font-weight:700}
+.day.pp{background:var(--period-soft);border:1.5px dashed var(--period)}
+.day.f{background:var(--fert-soft)}
+.day.o::after{content:"";position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:var(--fert)}
+.day.t{outline:2px solid var(--ink);outline-offset:-2px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:.8rem;color:var(--mute)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-weight:500}
+td button{background:none;border:0;color:var(--period);cursor:pointer;font:inherit}
+.scroll{overflow-x:auto}
+header{background:linear-gradient(120deg,#7a3cf0,#e0306e 60%,#ff8a3d);color:#fff;border-radius:16px;padding:18px 20px;align-items:center}
+header span{font-size:.8rem;opacity:.9}
+nav{border:0;gap:6px}
+nav button{border-radius:999px;background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+nav button[aria-selected="true"]{background:linear-gradient(120deg,#7a3cf0,#e0306e);color:#fff;box-shadow:none}
+.card{border-top:4px solid var(--accent)}
+#log .card{border-top-color:var(--period)}#import .card{border-top-color:#2f8cff}#hist .card{border-top-color:#ffb020}
+.hero{background:linear-gradient(90deg,#7a3cf0,#e0306e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.grid3 .stat{border-radius:12px;padding:10px 12px}
+.grid3 .stat:nth-child(1){background:rgba(122,60,240,.14)}.grid3 .stat:nth-child(2){background:rgba(224,48,110,.14)}.grid3 .stat:nth-child(3){background:rgba(18,163,138,.16)}.grid3 .stat:nth-child(4){background:rgba(255,176,32,.2)}.grid3 .stat:nth-child(5){background:rgba(47,140,255,.16)}.grid3 .stat:nth-child(6){background:rgba(255,138,61,.18)}
+.btn{background:linear-gradient(120deg,#7a3cf0,#e0306e);color:#fff}
+.btn.sky{background:linear-gradient(120deg,#2f8cff,#12a38a)}
+#ldel{color:var(--period);border-color:var(--period)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 16px}.actions .btn{margin:0}
+button.day{font:inherit;color:inherit;background:transparent;cursor:pointer;padding:0}
+.day.p{background:linear-gradient(135deg,#e0306e,#ff7a9c)}
+.day.f{color:var(--fert);font-weight:700}
+.day:hover{border-color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--accent:#9b6bff;--on-accent:#fff;--bg:#17102a;--surface:#221a3a;--line:#3a2c5c;--mute:#b3a6d6}}
+:root[data-theme="dark"]{--accent:#9b6bff;--on-accent:#fff;--bg:#17102a;--surface:#221a3a;--line:#3a2c5c;--mute:#b3a6d6}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
+.chip[aria-pressed="true"]{background:linear-gradient(120deg,#7a3cf0,#e0306e);color:#fff;border-color:transparent}
+#day .card{border-top-color:#12a38a}#set .card{border-top-color:#ff8a3d}
+.day.d::before{content:"";position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:#ffb020}
+</style>
+</head>
+<body>
+<main>
+<header><h1>🌸 Cycle Tracker</h1><span>Saved on this device</span></header>
+<nav role="tablist">
+<button role="tab" data-t="home" aria-selected="true">Overview</button>
+<button role="tab" data-t="log" aria-selected="false">Log cycle</button>
+<button role="tab" data-t="import" aria-selected="false">Import past data</button>
+<button role="tab" data-t="hist" aria-selected="false">History</button>
+<button role="tab" data-t="day" aria-selected="false">Daily log</button>
+<button role="tab" data-t="set" aria-selected="false">Settings</button>
+</nav>
+
+<section class="panel" id="home">
+<div class="card" id="summary"></div>
+<div class="actions" id="quick"></div>
+<div class="card">
+<div class="cal-head"><button id="prev" aria-label="Previous month">‹</button><h2 id="mlabel" style="margin:0"></h2><button id="next" aria-label="Next month">›</button></div>
+<div class="cal" id="cal"></div>
+<div class="legend"><span><i style="background:var(--period)"></i>Logged period</span><span><i style="border:1.5px dashed var(--period);background:var(--period-soft)"></i>Predicted period</span><span><i style="background:var(--fert-soft)"></i>Fertile window</span><span><i style="background:var(--fert);border-radius:50%;width:8px;height:8px"></i>Ovulation</span></div>
+</div>
+<p class="mute">Predictions are estimates based on your own history. They are not medical advice and shouldn’t be used as contraception.</p>
+</section>
+
+<section class="panel" id="log" hidden>
+<div class="card">
+<h2 id="ltitle">Log a new cycle</h2>
+<div class="row"><div><label for="ls">Period start</label><input type="date" id="ls"></div><div><label for="le">Period end (optional)</label><input type="date" id="le"></div></div>
+<label for="ln">Note (optional)</label><input id="ln" placeholder="Cramps, flow, mood…">
+<button class="btn" id="save">Save cycle</button><button class="btn ghost" id="cancel" hidden>Cancel</button><button class="btn ghost" id="ldel" hidden>Delete cycle</button>
+<div class="msg" id="lmsg"></div>
+</div>
+</section>
+
+<section class="panel" id="import" hidden>
+<div class="card">
+<h2>Import past cycles</h2>
+<p class="mute">One cycle per line: <code>start,end</code> (end is optional). Dates can be YYYY-MM-DD or DD/MM/YYYY. Paste below or choose a CSV or text file.</p>
+<textarea id="itext" placeholder="2026-07-04,2026-07-08&#10;2026-08-02,2026-08-06&#10;2026-08-31"></textarea>
+<input type="file" id="ifile" accept=".csv,.txt,text/plain,text/csv" style="margin-top:10px">
+<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="irep" style="width:auto"> Replace all existing cycles</label><button class="btn" id="doimport">Import cycles</button><button class="btn ghost" id="iload">Load my current data to edit</button>
+<div class="msg" id="imsg"></div>
+</div>
+</section>
+
+<section class="panel" id="hist" hidden>
+<div class="card">
+<h2>History</h2>
+<div class="scroll" id="htable"></div>
+<button class="btn ghost" id="clear" style="margin-left:0">Delete all data</button>
+</div>
+</section>
+<section class="panel" id="day" hidden>
+<div class="card"><h2 id="dtitle">How are you feeling?</h2>
+<label for="dd">Date</label><input type="date" id="dd">
+<label>Mood</label><div class="chips" id="dmood"></div>
+<label>Flow</label><div class="chips" id="dflow"></div>
+<label>Symptoms</label><div class="chips" id="dsym"></div>
+<label for="dn">Note</label><input id="dn" placeholder="Anything else worth remembering">
+<button class="btn" id="dsave">Save entry</button><button class="btn ghost" id="ddel" hidden>Delete entry</button>
+<div class="msg" id="dmsg"></div></div>
+<div class="card"><h2>Recent entries</h2><div class="scroll" id="dlist"></div></div>
+</section>
+<section class="panel" id="set" hidden>
+<div class="card"><h2>Prediction settings</h2>
+<label for="sl">Luteal phase: days from ovulation to next period (10–18)</label><input type="number" id="sl" min="10" max="18">
+<label for="sm">Cycle length override in days (0 = learn from my history)</label><input type="number" id="sm" min="0" max="60">
+<label for="sp">Period length override in days (0 = learn from my history)</label><input type="number" id="sp" min="0" max="14">
+<button class="btn" id="ssave">Save settings</button><button class="btn ghost" id="sreset">Reset to defaults</button>
+<div class="msg" id="smsg"></div>
+<h2 style="margin-top:20px">Data backup</h2>
+<p class="mute">Export a backup regularly. Import a backup to restore your cycles, daily logs and settings.</p>
+<button class="btn sky" id="backup">Download backup</button>
+<label for="restorefile">Restore from backup file</label><input type="file" id="restorefile" accept=".json,application/json">
+<div class="msg" id="backupmsg" role="status" aria-live="polite"></div>
+</div>
+</section>
+</main>
+
+<script>
+(function(){
+var KEY="cycletracker:v1", DAY=86400000, mem=[];
+function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):[];}catch(e){console.error("Could not read cycle data from local storage:",e);return mem;}}
+function save(){
+  try{
+    localStorage.setItem(KEY,JSON.stringify(cycles));
+    if(localStorage.getItem(KEY)!==JSON.stringify(cycles)) throw new Error("Storage verification failed");
+    return true;
+  }catch(e){
+    console.error("Could not save cycle data:",e);
+    var m=document.getElementById("lmsg");
+    if(m)m.textContent="SAVE FAILED: browser storage is unavailable. Export/backup your data and do not close this tab yet.";
+    return false;
+  }
+}
+var cycles=load().filter(function(c){return c&&/^\d{4}-\d{2}-\d{2}$/.test(c.s);});
+
+function num(s){var p=s.split("-").map(Number);return Date.UTC(p[0],p[1]-1,p[2])/DAY;}
+function fmt(n){return new Date(n*DAY).toISOString().slice(0,10);}
+function pretty(n){return new Date(n*DAY).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});}
+var now=new Date(), today=num(now.getFullYear()+"-"+(now.getMonth()+1)+"-"+now.getDate());
+function sorted(){return cycles.slice().sort(function(a,b){return a.s<b.s?-1:1;});}
+
+/* ---------- Prediction algorithm ----------
+ 1. Cycle length = days between consecutive period starts.
+ 2. Discard implausible lengths (<18 or >50 days): usually a missed log.
+ 3. Take the 6 most recent valid lengths, weight recent ones more (1..n).
+ 4. Predicted length = weighted mean; spread = weighted std. deviation.
+ 5. Next starts = last start + k * length; window = ± spread.
+ 6. Ovulation ≈ 14 days before next start (typical luteal phase);
+    fertile window = 5 days before ovulation through 1 day after. */
+function predict(){
+  var cs=sorted(), lens=[];
+  for(var i=1;i<cs.length;i++){var d=num(cs[i].s)-num(cs[i-1].s);if(d>=18&&d<=50)lens.push(d);}
+  var recent=lens.slice(-6), len=28, sd=0, conf="Low";
+  if(recent.length){
+    var w=0,sw=0;recent.forEach(function(l,i){w+=l*(i+1);sw+=i+1;});len=w/sw;
+    var v=0;recent.forEach(function(l,i){v+=(i+1)*Math.pow(l-len,2);});sd=Math.sqrt(v/sw);
+    conf=recent.length<3?"Low":(sd<=2?"High":"Medium");
+  }
+  var pls=cs.filter(function(c){return c.e&&num(c.e)>=num(c.s)&&num(c.e)-num(c.s)<14;}).map(function(c){return num(c.e)-num(c.s)+1;});
+  var pl=pls.length?Math.round(pls.reduce(function(a,b){return a+b;},0)/pls.length):5;
+  if(S.manual)len=S.manual;if(S.pl)pl=S.pl;var out={len:Math.round(len),sd:sd,win:Math.max(1,Math.round(sd)),conf:S.manual?"Manual":conf,pl:pl,next:[],n:recent.length};
+  if(cs.length){
+    var last=num(cs[cs.length-1].s);
+    for(var k=1;k<=4;k++){var st=last+Math.round(len*k),ov=st-S.luteal;out.next.push({s:st,ov:ov,f0:ov-5,f1:ov+1});}
+  }
+  return out;
+}
+
+/* ---------- Rendering ---------- */
+var view=new Date(now.getFullYear(),now.getMonth(),1), P;
+function summary(){
+  var el=document.getElementById("summary");P=predict();
+  if(!cycles.length){el.innerHTML="<h2>Welcome</h2><p class='mute'>Log your latest period or import past cycles to see predictions. Three or more cycles give a reliable estimate.</p>";return;}
+  var nx=P.next[0],diff=nx.s-today,line;
+  if(diff>0)line="Next period in "+diff+" day"+(diff==1?"":"s");
+  else if(diff==0)line="Period expected today";
+  else line="Period is "+(-diff)+" day"+(diff==-1?"":"s")+" late";
+  var ovTxt=nx.ov>=today?pretty(nx.ov):"Passed";
+  el.innerHTML="<p class='hero'>"+line+"</p><p class='mute'>Expected "+pretty(nx.s)+(P.win>0?" (±"+P.win+" day"+(P.win>1?"s":"")+")":"")+"</p>"+
+  "<div class='grid3'><div class='stat'><span class='mute'>Average cycle</span><b>"+P.len+" days</b></div>"+
+  "<div class='stat'><span class='mute'>Period length</span><b>"+P.pl+" days</b></div>"+
+  "<div class='stat'><span class='mute'>Ovulation</span><b>"+ovTxt+"</b></div>"+
+  "<div class='stat'><span class='mute'>Fertile window</span><b>"+pretty(nx.f0).replace(/ \d{4}$/,"")+" – "+pretty(nx.f1).replace(/ \d{4}$/,"")+"</b></div>"+
+  "<div class='stat'><span class='mute'>Confidence</span><b>"+P.conf+"</b></div>"+
+  "<div class='stat'><span class='mute'>Cycles analysed</span><b>"+P.n+"</b></div></div>";
+}
+function calendar(){
+  var y=view.getFullYear(),m=view.getMonth(),el=document.getElementById("cal");
+  document.getElementById("mlabel").textContent=view.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  var html=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(d){return "<div class='dow'>"+d+"</div>";}).join("");
+  var first=new Date(Date.UTC(y,m,1)),lead=(first.getUTCDay()+6)%7,days=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  for(var i=0;i<lead;i++)html+="<div></div>";
+  var cs=sorted();
+  for(var d=1;d<=days;d++){
+    var n=Date.UTC(y,m,d)/DAY,cls="day";
+    cs.forEach(function(c){var s=num(c.s),e=c.e&&num(c.e)>=s?num(c.e):s+P.pl-1;if(n>=s&&n<=e)cls+=" p";});
+    if(cls.indexOf(" p")<0)P.next.forEach(function(x){if(n>=x.s&&n<x.s+P.pl)cls+=" pp";else if(n>=x.f0&&n<=x.f1)cls+=" f";if(n===x.ov)cls+=" o";});
+    else P.next.forEach(function(x){if(n===x.ov)cls+=" o";});
+    if(n===today)cls+=" t";if(logs[fmt(n)])cls+=" d";
+    html+="<button class='"+cls+"' data-d='"+fmt(n)+"' aria-label='"+pretty(n)+"'>"+d+"</button>";
+  }
+  el.innerHTML=html;
+}
+function history(){
+  var cs=sorted().reverse(),el=document.getElementById("htable");
+  if(!cs.length){el.innerHTML="<p class='mute'>No cycles yet.</p>";return;}
+  var all=sorted(),h="<table><tr><th>Start</th><th>End</th><th>Cycle</th><th>Note</th><th></th></tr>";
+  cs.forEach(function(c){
+    var i=all.indexOf(c),len=i>0?(num(c.s)-num(all[i-1].s))+" d":"–";
+    h+="<tr><td>"+pretty(num(c.s))+"</td><td>"+(c.e?pretty(num(c.e)):"–")+"</td><td>"+len+"</td><td>"+esc(c.n||"")+"</td><td><button data-edit='"+c.s+"'>Edit</button> <button data-del='"+c.s+"'>Delete</button></td></tr>";
+  });
+  el.innerHTML=h+"</table>";
+}
+function esc(s){return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function refresh(){summary();calendar();history();quick();dlist();}
+
+/* ---------- Actions ---------- */
+function upsert(c){cycles=cycles.filter(function(x){return x.s!==c.s;});cycles.push(c);}
+document.getElementById("save").onclick=function(){
+  var s=document.getElementById("ls").value,e=document.getElementById("le").value,n=document.getElementById("ln").value.trim(),m=document.getElementById("lmsg");
+  if(!s){m.textContent="Choose a start date.";return;}
+  if(e&&num(e)<num(s)){m.textContent="End date must be on or after the start date.";return;}
+  var was=editing;if(was)cycles=cycles.filter(function(c){return c.s!==was;});upsert({s:s,e:e||"",n:n});save();refresh();
+  stopEdit();
+  m.textContent=was?"Changes saved.":"Saved.";if(was)tab("hist");
+};
+function parseDate(t){
+  t=t.trim();var m;
+  if((m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)))return pad(m[1],m[2],m[3]);
+  if((m=t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/)))return pad(m[3],m[2],m[1]);
+  return null;
+}
+function pad(y,mo,d){var s=y+"-"+("0"+mo).slice(-2)+"-"+("0"+d).slice(-2),dt=new Date(s+"T00:00:00Z");return isNaN(dt)||dt.toISOString().slice(0,10)!==s?null:s;}
+document.getElementById("ifile").onchange=function(ev){
+  var f=ev.target.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){document.getElementById("itext").value=String(r.result);};r.readAsText(f);
+};
+document.getElementById("doimport").onclick=function(){
+  var lines=document.getElementById("itext").value.split(/\r?\n/),ok=0,bad=0;if(document.getElementById("irep").checked){if(!confirm("Replace all existing cycles with this list?"))return;cycles=[];}
+  lines.forEach(function(l){
+    if(!l.trim())return;
+    var p=l.split(/[,;\t]/),s=parseDate(p[0]),e=p[1]&&p[1].trim()?parseDate(p[1]):"";
+    if(!s&&ok+bad===0&&/start|date/i.test(l))return;
+    if(!s||(p[1]&&p[1].trim()&&!e)||(e&&num(e)<num(s))){bad++;return;}
+    upsert({s:s,e:e||"",n:(p[2]||"").trim()});ok++;
+  });
+  save();refresh();
+  document.getElementById("imsg").textContent="Imported "+ok+" cycle"+(ok==1?"":"s")+(bad?"; skipped "+bad+" line"+(bad==1?"":"s")+" that couldn’t be read.":".");
+  if(ok)document.getElementById("itext").value="";
+};
+document.getElementById("htable").onclick=function(ev){
+  var a=ev.target.getAttribute&&ev.target.getAttribute("data-edit");if(a){startEdit(a);return;}
+  var s=ev.target.getAttribute&&ev.target.getAttribute("data-del");
+  if(s&&confirm("Delete this cycle?")){cycles=cycles.filter(function(c){return c.s!==s;});save();refresh();}
+};
+document.getElementById("clear").onclick=function(){
+  if(cycles.length&&confirm("Delete all logged cycles from this device?")){cycles=[];save();refresh();}
+};
+document.getElementById("prev").onclick=function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);calendar();};
+document.getElementById("next").onclick=function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);calendar();};
+document.querySelectorAll("nav button").forEach(function(b){
+  b.onclick=function(){
+    document.querySelectorAll("nav button").forEach(function(x){x.setAttribute("aria-selected",x===b);});
+    document.querySelectorAll(".panel").forEach(function(p){p.hidden=p.id!==b.dataset.t;});
+  };
+});
+var editing=null;
+function $(i){return document.getElementById(i);}
+function tab(t){document.querySelectorAll("nav button").forEach(function(x){x.setAttribute("aria-selected",x.dataset.t===t);});document.querySelectorAll(".panel").forEach(function(p){p.hidden=p.id!==t;});}
+function stopEdit(){editing=null;$("ls").value=$("le").value=$("ln").value="";$("ltitle").textContent="Log a new cycle";$("cancel").hidden=$("ldel").hidden=true;}
+function startEdit(s){var c=cycles.filter(function(x){return x.s===s;})[0];if(!c)return;editing=s;$("ls").value=c.s;$("le").value=c.e||"";$("ln").value=c.n||"";$("ltitle").textContent="Edit cycle";$("cancel").hidden=$("ldel").hidden=false;$("lmsg").textContent="";tab("log");}
+$("cancel").onclick=function(){stopEdit();tab("hist");};
+$("ldel").onclick=function(){if(confirm("Delete this cycle?")){cycles=cycles.filter(function(c){return c.s!==editing;});save();stopEdit();refresh();tab("hist");}};
+$("cal").onclick=function(ev){var b=ev.target.closest("[data-d]");if(!b)return;var d=b.dataset.d,n=num(d),hit=sorted().filter(function(c){var s=num(c.s),e=c.e&&num(c.e)>=s?num(c.e):s;return n>=s&&n<=e;})[0];if(hit)startEdit(hit.s);else{stopEdit();$("ls").value=d;$("lmsg").textContent="Start date filled in from the calendar.";tab("log");}};
+$("iload").onclick=function(){$("itext").value=sorted().map(function(c){return c.s+","+c.e+(c.n?","+c.n:"");}).join("\n");};
+$("quick").onclick=function(ev){var a=ev.target.dataset.a,cs=sorted(),last=cs[cs.length-1];if(a==="mood"){loadDay(fmt(today));tab("day");return;}if(a==="start"){upsert({s:fmt(today),e:"",n:""});}else if(a==="end"&&last){last.e=fmt(today);}else return;save();refresh();};
+function quick(){var cs=sorted(),l=cs[cs.length-1],h="<button class='btn' data-a='start'>Period started today</button><button class='btn sky' data-a='mood'>Log today’s symptoms</button>";if(l&&!l.e&&today>=num(l.s)&&today-num(l.s)<14)h+="<button class='btn sky' data-a='end'>Period ended today</button>";$("quick").innerHTML=h;}
+var SK="cycletracker:settings",DK="cycletracker:days:v1",S={luteal:14,manual:0,pl:0},logs={};
+try{var rs=JSON.parse(localStorage.getItem(SK));if(rs)S=Object.assign(S,rs);}catch(e){}
+try{logs=JSON.parse(localStorage.getItem(DK))||{};}catch(e){}
+function saveLogs(){try{localStorage.setItem(DK,JSON.stringify(logs));if(localStorage.getItem(DK)!==JSON.stringify(logs))throw new Error("Storage verification failed");return true;}catch(e){console.error("Could not save daily log:",e);$("dmsg").textContent="SAVE FAILED: browser storage is unavailable. Export/backup your data before closing.";return false;}}
+var MOODS=["😊 Happy","😌 Calm","😐 Okay","😴 Tired","😢 Sad","😠 Irritable","😰 Anxious"],FLOWS=["Spotting","Light","Medium","Heavy"],SYMS=["Cramps","Headache","Bloating","Cravings","Acne","Backache","Nausea","Tender breasts"];
+function mk(id,list,single){$(id).innerHTML=list.map(function(x){return "<button type='button' class='chip' aria-pressed='false' data-v='"+x+"'>"+x+"</button>";}).join("");
+  $(id).onclick=function(ev){var b=ev.target.closest(".chip");if(!b)return;var on=b.getAttribute("aria-pressed")!=="true";if(single)$(id).querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed","false");});b.setAttribute("aria-pressed",String(on));};}
+function sel(id){return Array.prototype.map.call($(id).querySelectorAll(".chip[aria-pressed='true']"),function(x){return x.dataset.v;});}
+function setSel(id,v){$(id).querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed",String(v.indexOf(x.dataset.v)>-1));});}
+mk("dmood",MOODS,true);mk("dflow",FLOWS,true);mk("dsym",SYMS,false);
+function loadDay(d){var e=logs[d];$("dd").value=d;setSel("dmood",e&&e.mood?[e.mood]:[]);setSel("dflow",e&&e.flow?[e.flow]:[]);setSel("dsym",e?e.sym:[]);$("dn").value=e?e.note||"":"";$("ddel").hidden=!e;$("dtitle").textContent=e?"Edit entry":"How are you feeling?";}
+$("dd").onchange=function(){if($("dd").value)loadDay($("dd").value);};
+$("dsave").onclick=function(){var d=$("dd").value,m=$("dmsg");if(!d){m.textContent="Choose a date.";return;}
+  var e={mood:sel("dmood")[0]||"",flow:sel("dflow")[0]||"",sym:sel("dsym"),note:$("dn").value.trim()};
+  if(!e.mood&&!e.flow&&!e.sym.length&&!e.note){m.textContent="Pick a mood, flow or symptom first.";return;}
+  logs[d]=e;saveLogs();refresh();loadDay(d);m.textContent="Saved.";};
+$("ddel").onclick=function(){var d=$("dd").value;if(logs[d]&&confirm("Delete this entry?")){delete logs[d];saveLogs();refresh();loadDay(d);$("dmsg").textContent="Deleted.";}};
+function dlist(){var ks=Object.keys(logs).sort().reverse().slice(0,30),el=$("dlist");
+  if(!ks.length){el.innerHTML="<p class='mute'>No entries yet.</p>";return;}
+  el.innerHTML="<table><tr><th>Date</th><th>Mood</th><th>Flow</th><th>Symptoms</th><th></th></tr>"+ks.map(function(k){var e=logs[k];return "<tr><td>"+pretty(num(k))+"</td><td>"+esc(e.mood||"–")+"</td><td>"+esc(e.flow||"–")+"</td><td>"+esc(e.sym.join(", ")+(e.note?(e.sym.length?" · ":"")+e.note:"")||"–")+"</td><td><button data-ed='"+k+"'>Edit</button></td></tr>";}).join("")+"</table>";}
+$("dlist").onclick=function(ev){var k=ev.target.getAttribute("data-ed");if(k){loadDay(k);window.scrollTo(0,0);}};
+function loadS(){$("sl").value=S.luteal;$("sm").value=S.manual;$("sp").value=S.pl;}
+$("ssave").onclick=function(){var l=+$("sl").value,m=+$("sm").value,p=+$("sp").value,g=$("smsg");
+  if(!(l>=10&&l<=18)){g.textContent="Luteal phase should be 10–18 days.";return;}
+  if(m&&(m<18||m>60)){g.textContent="Cycle length should be 18–60 days, or 0 to learn from history.";return;}
+  if(p&&(p<1||p>14)){g.textContent="Period length should be 1–14 days, or 0 to learn from history.";return;}
+  S={luteal:l,manual:m,pl:p};try{localStorage.setItem(SK,JSON.stringify(S));if(localStorage.getItem(SK)!==JSON.stringify(S))throw new Error("Storage verification failed");}catch(e){console.error("Could not save settings:",e);g.textContent="SAVE FAILED: browser storage is unavailable.";return;}refresh();g.textContent="Saved. Predictions updated.";};
+$("sreset").onclick=function(){S={luteal:14,manual:0,pl:0};try{localStorage.removeItem(SK);}catch(e){}loadS();refresh();$("smsg").textContent="Defaults restored.";};
+$("backup").onclick=function(){
+  try{
+    var data={format:"cycle-tracker-backup",version:1,exportedAt:new Date().toISOString(),cycles:cycles,logs:logs,settings:S};
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="cycle-tracker-backup-"+fmt(today)+".json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    $("backupmsg").textContent="Backup downloaded. Keep it somewhere safe.";
+  }catch(e){console.error(e);$("backupmsg").textContent="Could not create backup: "+e.message;}
+};
+$("restorefile").onchange=function(ev){
+  var f=ev.target.files[0];if(!f)return;var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var data=JSON.parse(String(reader.result));
+      if(!data||data.format!=="cycle-tracker-backup"||!Array.isArray(data.cycles)||typeof data.logs!=="object"||typeof data.settings!=="object")throw new Error("This is not a valid Cycle Tracker backup.");
+      if(!confirm("Replace the current tracker data with this backup? Download a backup of current data first if you need it."))return;
+      localStorage.setItem(KEY,JSON.stringify(data.cycles));localStorage.setItem(DK,JSON.stringify(data.logs));localStorage.setItem(SK,JSON.stringify(data.settings));
+      if(localStorage.getItem(KEY)!==JSON.stringify(data.cycles))throw new Error("Could not verify restored cycle data.");
+      cycles=data.cycles.filter(function(c){return c&&/^\d{4}-\d{2}-\d{2}$/.test(c.s);});logs=data.logs||{};S=Object.assign({luteal:14,manual:0,pl:0},data.settings||{});loadS();refresh();
+      $("backupmsg").textContent="Backup restored successfully.";
+    }catch(e){console.error(e);$("backupmsg").textContent="Restore failed: "+e.message;}
+  };reader.readAsText(f);ev.target.value="";
+};
+loadDay(fmt(today));loadS();
+refresh();
+})();
+</script>
+</body>
+</html>
